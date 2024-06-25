@@ -1,0 +1,78 @@
+using System.Diagnostics;
+using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using myfinance_web_netcore.Mappers;
+using myfinance_web_netcore.Models;
+using myfinance_web_netcore.Services;
+
+namespace myfinance_web_netcore.Controllers;
+
+[Route("[controller]")]
+public class TransacaoController : Controller
+{
+    private readonly ILogger<TransacaoController> _logger;
+    private readonly ITransacaoService _transacaoService;
+    private readonly IPlanoContaService _planoContaService;
+
+    public TransacaoController(ILogger<TransacaoController> logger, ITransacaoService transacaoService, IPlanoContaService planoContaService)
+    {
+        _logger = logger;
+        _transacaoService = transacaoService;
+        _planoContaService = planoContaService;
+    }
+
+    public IActionResult Index()
+    {        
+        var lista = _transacaoService.Listar();
+        ViewBag.ListaTransacao = lista;
+        return View();
+    }
+
+    [HttpPost]
+    [Route("Cadastro")]
+    [Route("Cadastro/{id}")]
+    public IActionResult Cadastro(TransacaoModel model, int? id){
+        
+        if(ModelState.IsValid) 
+        {
+            _transacaoService.Salvar(model);
+            return RedirectToAction("Cadastro");
+        } 
+        else {
+            var listaPlanoContas = _planoContaService.Listar();
+            var selectListPlanoContas = new SelectList(listaPlanoContas, "Id", "Descricao");
+            model.PlanoContas = selectListPlanoContas;
+            return View(model);
+        }        
+    }
+
+    [HttpGet]    
+    [Route("Cadastro")]
+    [Route("Cadastro/{id}")]
+    public IActionResult Cadastro(int? id){
+        
+        var listaPlanoContas = _planoContaService.Listar();
+        var selectListPlanoContas = new SelectList(listaPlanoContas, "Id", "Descricao");
+        
+
+        if(id !=null){            
+            var model = _transacaoService.Consultar((int)id);
+            model.PlanoContas = selectListPlanoContas;
+            return View(model);
+        } 
+        else 
+        {
+            var model = new TransacaoModel();
+            model.PlanoContas = selectListPlanoContas;
+            return View(model);
+        }
+    }
+
+    [HttpGet]
+    [Route("Excluir/{id}")]
+    public IActionResult Excluir(int id){
+        _transacaoService.Excluir(id);
+        return RedirectToAction("Index");
+    }
+}
